@@ -3,75 +3,194 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#163b65">
+  <meta name="theme-color" content="#101827">
   <meta name="description" content="Recherche locale des codes ROME présents dans la liste officielle des métiers en tension.">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icons/icon-192.png">
   <title>ROME — Métiers en tension</title>
   <style>
-    :root { color-scheme: light; --blue:#163b65; --bg:#f4f7fb; --ink:#172536; --muted:#607084; }
+    :root { color-scheme: light dark; --bg:#f3f6fb; --panel:#fff; --panel2:#f8fafc; --ink:#172235; --muted:#68768a; --line:#dce4ef; --accent:#3267e9; --accent-soft:#e9efff; --good:#14856d; --shadow:0 14px 40px #1d35570c; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#0b1120; --panel:#121b2d; --panel2:#172237; --ink:#eef3ff; --muted:#9eacc2; --line:#29364c; --accent:#83a6ff; --accent-soft:#1d2d50; --good:#6ed7b9; --shadow:0 14px 40px #0003; } }
     * { box-sizing:border-box; }
-    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
-    main { max-width:620px; margin:0 auto; padding:28px 18px 48px; }
-    h1 { font-size:1.45rem; margin:0 0 6px; color:var(--blue); }
-    .sub { color:var(--muted); margin:0 0 24px; font-size:.95rem; }
-    label { display:block; font-weight:650; margin-bottom:8px; }
-    input { width:100%; font-size:1.15rem; padding:15px 14px; border:1px solid #bdc9d8; border-radius:13px; outline:none; background:white; text-transform:uppercase; }
-    input:focus { border-color:var(--blue); box-shadow:0 0 0 3px #163b651c; }
-    #status { color:var(--muted); font-size:.9rem; margin:14px 2px; }
-    #results { display:grid; gap:10px; margin-top:14px; }
-    .region { background:white; border:1px solid #e0e7ef; border-radius:12px; padding:13px 14px; }
-    .region strong { display:block; }
-    .empty { background:white; border:1px dashed #c9d3df; border-radius:12px; padding:16px; color:var(--muted); }
-    footer { color:var(--muted); font-size:.78rem; margin-top:30px; line-height:1.5; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .shell { max-width:760px; margin:0 auto; padding:clamp(18px,4vw,34px) 16px 36px; }
+    .topline { display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+    .logo { display:grid; place-items:center; width:46px; height:46px; border-radius:15px; background:linear-gradient(145deg,#4f7eff,#2449b9); color:white; font-weight:850; letter-spacing:-.07em; box-shadow:0 8px 22px #3267e933; }
+    .eyebrow { margin:0 0 3px; color:var(--muted); font-size:.72rem; font-weight:750; letter-spacing:.13em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(1.25rem,4vw,1.65rem); letter-spacing:-.04em; line-height:1.2; }
+    .intro { margin:0 0 20px; color:var(--muted); font-size:.94rem; line-height:1.55; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:clamp(16px,4vw,24px); box-shadow:var(--shadow); }
+    label { display:block; margin:0 0 8px; font-size:.82rem; font-weight:750; }
+    .searchline { display:flex; gap:9px; }
+    #rome { flex:1; min-width:0; padding:15px 14px; border:1px solid var(--line); border-radius:13px; background:var(--panel2); color:var(--ink); text-transform:uppercase; font-size:1.15rem; font-weight:750; letter-spacing:.07em; outline:none; }
+    #rome:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
+    .btn { border:1px solid var(--line); border-radius:12px; padding:11px 13px; background:var(--panel2); color:var(--ink); font-weight:700; font-size:.86rem; transition:transform .12s,border-color .12s; }
+    .btn:active { transform:scale(.98); }
+    .btn.primary { border-color:transparent; background:var(--accent); color:#fff; }
+    .searchline .btn { min-width:76px; }
+    .tools { display:flex; flex-wrap:wrap; gap:8px; margin-top:11px; }
+    .tools .btn { flex:1; min-width:110px; }
+    .filterrow { margin-top:18px; }
+    select { width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:12px; background:var(--panel2); color:var(--ink); outline:none; }
+    .statusrow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:22px 2px 12px; }
+    #status { margin:0; color:var(--muted); font-size:.88rem; }
+    .count { color:var(--good); font-size:.75rem; font-weight:800; white-space:nowrap; }
+    #results { display:grid; gap:9px; }
+    .region { display:flex; align-items:center; gap:12px; padding:14px 15px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+    .region-mark { display:grid; place-items:center; flex:0 0 34px; height:34px; border-radius:11px; background:var(--accent-soft); color:var(--accent); font-size:.75rem; font-weight:850; }
+    .region strong { font-size:.94rem; font-weight:700; }
+    .empty { padding:22px 16px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; background:var(--panel); line-height:1.5; }
+    .section { margin-top:22px; }
+    .sectionhead { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 10px; }
+    h2 { margin:0; font-size:.92rem; letter-spacing:-.01em; }
+    .mini-list { display:flex; flex-wrap:wrap; gap:7px; }
+    .chip { border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:999px; padding:8px 11px; font-size:.8rem; font-weight:750; }
+    .chip small { color:var(--muted); font-weight:500; margin-left:4px; }
+    .muted-note { color:var(--muted); font-size:.8rem; margin:0; }
+    footer { margin:25px 4px 0; color:var(--muted); font-size:.76rem; line-height:1.6; }
+    footer a { color:var(--accent); }
+    .toast { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translate(-50%,12px); opacity:0; pointer-events:none; padding:11px 15px; border-radius:12px; background:var(--ink); color:var(--bg); font-size:.85rem; font-weight:750; box-shadow:var(--shadow); transition:opacity .18s,transform .18s; z-index:5; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    @media (min-width:600px) { .searchline .btn { min-width:100px; } }
   </style>
 </head>
 <body>
-<main>
-  <h1>ROME — Métiers en tension</h1>
-  <p class="sub">Recherche par code ROME · fonctionnement hors ligne après le premier chargement</p>
-  <label for="rome">Code ROME</label>
-  <input id="rome" placeholder="Ex. A1416" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5">
-  <div id="status" aria-live="polite">Saisissez un code ROME.</div>
-  <div id="results"></div>
+<main class="shell">
+  <header class="topline">
+    <div class="logo" aria-hidden="true">R.</div>
+    <div><p class="eyebrow">Outil de recherche personnel</p><h1>ROME · Métiers en tension</h1></div>
+  </header>
+  <p class="intro">Retrouvez les régions associées à un code ROME dans la liste officielle française de 2025.</p>
+
+  <section class="panel" aria-label="Recherche ROME">
+    <label for="rome">Code ROME</label>
+    <div class="searchline">
+      <input id="rome" placeholder="Ex. A1416" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" inputmode="text" aria-describedby="format-help">
+      <button class="btn primary" id="searchBtn" type="button">Rechercher</button>
+    </div>
+    <p class="muted-note" id="format-help" style="margin:8px 2px 0">Une lettre suivie de quatre chiffres.</p>
+    <div class="tools">
+      <button class="btn" id="favoriteBtn" type="button" aria-pressed="false">☆ Ajouter aux favoris</button>
+      <button class="btn" id="copyBtn" type="button">Copier les résultats</button>
+    </div>
+    <div class="filterrow">
+      <label for="regionFilter">Filtrer par région</label>
+      <select id="regionFilter"><option value="">Toutes les régions</option></select>
+    </div>
+  </section>
+
+  <div class="statusrow"><p id="status" aria-live="polite">Saisissez un code ROME pour commencer.</p><span class="count" id="count"></span></div>
+  <section id="results" aria-live="polite"></section>
+
+  <section class="section" aria-labelledby="favoritesTitle">
+    <div class="sectionhead"><h2 id="favoritesTitle">★ Favoris</h2><button class="btn" id="clearFavorites" type="button">Effacer</button></div>
+    <div class="mini-list" id="favoritesList"></div>
+  </section>
+  <section class="section" aria-labelledby="historyTitle">
+    <div class="sectionhead"><h2 id="historyTitle">↺ Recherches récentes</h2><button class="btn" id="clearHistory" type="button">Effacer</button></div>
+    <div class="mini-list" id="historyList"></div>
+  </section>
+
   <footer>
-    Outil personnel de recherche. La présence d’un métier dans cette liste ne garantit ni une offre d’emploi disponible ni l’obtention d’une autorisation de travail.
-    <br>Source officielle à intégrer : arrêté français du 21 mai 2025, annexes I et II.
+    Outil personnel de consultation. La présence d’un métier dans cette liste ne garantit ni qu’une offre d’emploi est actuellement disponible ni l’obtention d’une autorisation de travail.<br>
+    Source : <a href="https://www.legifrance.gouv.fr/eli/arrete/2025/5/21/TSSD2508346A/jo/texte" target="_blank" rel="noreferrer">arrêté français du 21 mai 2025</a>. Les favoris et recherches sont enregistrés localement sur cet appareil.
   </footer>
 </main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="./data.js"></script>
 <script>
-const input = document.getElementById('rome');
-const statusEl = document.getElementById('status');
-const results = document.getElementById('results');
-function search() {
-  const code = input.value.trim().toUpperCase();
-  results.replaceChildren();
-  if (!code) { statusEl.textContent = 'Saisissez un code ROME.'; return; }
-  if (!/^[A-Z][0-9]{4}$/.test(code)) {
-    statusEl.textContent = 'Format attendu : une lettre suivie de quatre chiffres.';
-    return;
+(() => {
+  const input = document.getElementById('rome');
+  const statusEl = document.getElementById('status');
+  const results = document.getElementById('results');
+  const count = document.getElementById('count');
+  const regionFilter = document.getElementById('regionFilter');
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  const favoritesList = document.getElementById('favoritesList');
+  const historyList = document.getElementById('historyList');
+  const toast = document.getElementById('toast');
+  const data = window.TENSION_DATA || {};
+  const codes = Object.keys(data).sort();
+  const allRegions = [...new Set(Object.values(data).flat())].sort((a,b)=>a.localeCompare(b,'fr'));
+  const readStore = key => { try { const v=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(v)?v:[]; } catch { return []; } };
+  const writeStore = (key,value) => { try { localStorage.setItem(key,JSON.stringify(value)); } catch {} };
+  let favorites = readStore('rome-tension-favorites-v2').filter(c=>codes.includes(c));
+  let history = readStore('rome-tension-history-v2').filter(c=>codes.includes(c)).slice(0,12);
+  let currentCode = '';
+  let currentRegions = [];
+  let toastTimer;
+
+  function notify(message) {
+    toast.textContent = message; toast.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(()=>toast.classList.remove('show'),2100);
   }
-  const regions = (window.TENSION_DATA && window.TENSION_DATA[code]) || [];
-  if (!regions.length) {
-    statusEl.textContent = 'Aucune région trouvée pour ce code dans les données installées.';
-    results.innerHTML = '<div class="empty">Liste vide</div>';
-    return;
+  function makeChip(code, container, isFavorite=false) {
+    const b=document.createElement('button'); b.type='button'; b.className='chip';
+    b.append(document.createTextNode(code));
+    const n=document.createElement('small'); n.textContent=(data[code]||[]).length+' rég.'; b.append(n);
+    b.addEventListener('click',()=>{ input.value=code; search(true); window.scrollTo({top:0,behavior:'smooth'}); });
+    container.append(b);
   }
-  statusEl.textContent = regions.length + ' région(s) trouvée(s).';
-  regions.forEach(region => {
-    const card = document.createElement('div');
-    card.className = 'region';
-    const title = document.createElement('strong');
-    title.textContent = region;
-    card.appendChild(title);
-    results.appendChild(card);
+  function renderSaved() {
+    favoritesList.replaceChildren(); historyList.replaceChildren();
+    if (!favorites.length) { const p=document.createElement('p'); p.className='muted-note'; p.textContent='Vos codes favoris apparaîtront ici.'; favoritesList.append(p); }
+    else favorites.forEach(c=>makeChip(c,favoritesList,true));
+    if (!history.length) { const p=document.createElement('p'); p.className='muted-note'; p.textContent='Les derniers codes recherchés apparaîtront ici.'; historyList.append(p); }
+    else history.forEach(c=>makeChip(c,historyList));
+  }
+  function updateFavoriteButton() {
+    const saved=!!currentCode && favorites.includes(currentCode);
+    favoriteBtn.textContent=saved?'★ Retirer des favoris':'☆ Ajouter aux favoris';
+    favoriteBtn.setAttribute('aria-pressed',String(saved));
+    favoriteBtn.disabled=!currentCode || !data[currentCode];
+  }
+  function search(addToHistory=false) {
+    const code=input.value.trim().toUpperCase(); input.value=code;
+    results.replaceChildren(); count.textContent=''; currentCode=code; currentRegions=[];
+    if (!code) { statusEl.textContent='Saisissez un code ROME pour commencer.'; updateFavoriteButton(); return; }
+    if (!/^[A-Z][0-9]{4}$/.test(code)) { statusEl.textContent='Format invalide : une lettre suivie de quatre chiffres.'; updateFavoriteButton(); return; }
+    const regions=data[code]||[];
+    if (!regions.length) { statusEl.textContent='Aucun résultat pour ce code dans les données installées.'; const e=document.createElement('div'); e.className='empty'; e.textContent='Aucune région trouvée. Vérifiez le code ROME.'; results.append(e); updateFavoriteButton(); return; }
+    if (addToHistory) { history=[code,...history.filter(c=>c!==code)].slice(0,12); writeStore('rome-tension-history-v2',history); renderSaved(); }
+    currentRegions=regions.filter(r=>!regionFilter.value || r===regionFilter.value);
+    statusEl.textContent=regionFilter.value ? `Résultats pour ${code} · filtre : ${regionFilter.value}` : `Régions associées au code ${code}`;
+    count.textContent=`${currentRegions.length} / ${regions.length} région${regions.length===1?'':'s'}`;
+    if (!currentRegions.length) { const e=document.createElement('div'); e.className='empty'; e.textContent='Aucune région ne correspond au filtre choisi.'; results.append(e); }
+    currentRegions.forEach((region,i)=>{
+      const card=document.createElement('article'); card.className='region';
+      const mark=document.createElement('span'); mark.className='region-mark'; mark.textContent=String(i+1).padStart(2,'0'); mark.setAttribute('aria-hidden','true');
+      const title=document.createElement('strong'); title.textContent=region; card.append(mark,title); results.append(card);
+    });
+    updateFavoriteButton();
+  }
+  function copyResults() {
+    if (!currentCode || !currentRegions.length) { notify('Aucun résultat à copier.'); return; }
+    const text=`Code ROME : ${currentCode}\nRégions (${currentRegions.length}) :\n${currentRegions.map(r=>'• '+r).join('\n')}`;
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(()=>notify('Résultats copiés.')).catch(()=>fallbackCopy(text)); else fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    const area=document.createElement('textarea'); area.value=text; area.style.position='fixed'; area.style.opacity='0'; document.body.append(area); area.select();
+    try { document.execCommand('copy') ? notify('Résultats copiés.') : notify('Copie impossible sur cet appareil.'); } catch { notify('Copie impossible sur cet appareil.'); }
+    area.remove();
+  }
+  allRegions.forEach(region=>{ const option=document.createElement('option'); option.value=region; option.textContent=region; regionFilter.append(option); });
+  document.getElementById('searchBtn').addEventListener('click',()=>search(true));
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter') search(true); });
+  input.addEventListener('input',()=>{ if(input.value.length===5) search(true); else if(!input.value) search(false); });
+  regionFilter.addEventListener('change',()=>search(false));
+  favoriteBtn.addEventListener('click',()=>{
+    if(!currentCode || !data[currentCode]) return;
+    favorites=favorites.includes(currentCode)?favorites.filter(c=>c!==currentCode):[currentCode,...favorites];
+    writeStore('rome-tension-favorites-v2',favorites); renderSaved(); updateFavoriteButton(); notify(favorites.includes(currentCode)?'Ajouté aux favoris.':'Retiré des favoris.');
   });
-}
-input.addEventListener('input', search);
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
+  document.getElementById('copyBtn').addEventListener('click',copyResults);
+  document.getElementById('clearFavorites').addEventListener('click',()=>{ favorites=[]; writeStore('rome-tension-favorites-v2',favorites); renderSaved(); updateFavoriteButton(); notify('Favoris effacés.'); });
+  document.getElementById('clearHistory').addEventListener('click',()=>{ history=[]; writeStore('rome-tension-history-v2',history); renderSaved(); notify('Historique effacé.'); });
+  renderSaved(); updateFavoriteButton();
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+})();
 </script>
 </body>
 </html>
