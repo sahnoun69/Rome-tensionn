@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163b65">
+  <meta name="description" content="Recherche locale des codes ROME présents dans la liste officielle des métiers en tension.">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon-192.png">
+  <title>ROME — Métiers en tension</title>
+  <style>
+    :root { color-scheme: light; --blue:#163b65; --bg:#f4f7fb; --ink:#172536; --muted:#607084; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    main { max-width:620px; margin:0 auto; padding:28px 18px 48px; }
+    h1 { font-size:1.45rem; margin:0 0 6px; color:var(--blue); }
+    .sub { color:var(--muted); margin:0 0 24px; font-size:.95rem; }
+    label { display:block; font-weight:650; margin-bottom:8px; }
+    input { width:100%; font-size:1.15rem; padding:15px 14px; border:1px solid #bdc9d8; border-radius:13px; outline:none; background:white; text-transform:uppercase; }
+    input:focus { border-color:var(--blue); box-shadow:0 0 0 3px #163b651c; }
+    #status { color:var(--muted); font-size:.9rem; margin:14px 2px; }
+    #results { display:grid; gap:10px; margin-top:14px; }
+    .region { background:white; border:1px solid #e0e7ef; border-radius:12px; padding:13px 14px; }
+    .region strong { display:block; }
+    .empty { background:white; border:1px dashed #c9d3df; border-radius:12px; padding:16px; color:var(--muted); }
+    footer { color:var(--muted); font-size:.78rem; margin-top:30px; line-height:1.5; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ROME — Métiers en tension</h1>
+  <p class="sub">Recherche par code ROME · fonctionnement hors ligne après le premier chargement</p>
+  <label for="rome">Code ROME</label>
+  <input id="rome" placeholder="Ex. A1416" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5">
+  <div id="status" aria-live="polite">Saisissez un code ROME.</div>
+  <div id="results"></div>
+  <footer>
+    Outil personnel de recherche. La présence d’un métier dans cette liste ne garantit ni une offre d’emploi disponible ni l’obtention d’une autorisation de travail.
+    <br>Source officielle à intégrer : arrêté français du 21 mai 2025, annexes I et II.
+  </footer>
+</main>
+<script src="./data.js"></script>
+<script>
+const input = document.getElementById('rome');
+const statusEl = document.getElementById('status');
+const results = document.getElementById('results');
+function search() {
+  const code = input.value.trim().toUpperCase();
+  results.replaceChildren();
+  if (!code) { statusEl.textContent = 'Saisissez un code ROME.'; return; }
+  if (!/^[A-Z][0-9]{4}$/.test(code)) {
+    statusEl.textContent = 'Format attendu : une lettre suivie de quatre chiffres.';
+    return;
+  }
+  const regions = (window.TENSION_DATA && window.TENSION_DATA[code]) || [];
+  if (!regions.length) {
+    statusEl.textContent = 'Aucune région trouvée pour ce code dans les données installées.';
+    results.innerHTML = '<div class="empty">Liste vide</div>';
+    return;
+  }
+  statusEl.textContent = regions.length + ' région(s) trouvée(s).';
+  regions.forEach(region => {
+    const card = document.createElement('div');
+    card.className = 'region';
+    const title = document.createElement('strong');
+    title.textContent = region;
+    card.appendChild(title);
+    results.appendChild(card);
+  });
+}
+input.addEventListener('input', search);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
